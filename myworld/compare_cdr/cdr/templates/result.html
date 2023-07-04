@@ -1,0 +1,85 @@
+{% extends 'master.html' %}
+
+{% block title %} Result {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- resultat.html -->
+<div class="form-group">
+  <label for="combo-box">Choisissez une option :</label>
+  <select class="form-control" id="combo-box" name="selected_option">
+    <option value="identical">Données identiques</option>
+    <option value="tt_only">Données de TT seulement</option>
+    <option value="other_only">Données de l'autre opérateur seulement</option>
+  </select>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      {% for column_name in column_names %}
+      <th>{{ column_name }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if selected_option == 'identical' %}
+      {% for row in identical_data_from_db %}
+      <tr>
+        {% for value in row.values %}
+        <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    {% elif selected_option == 'tt_only' %}
+      {% for row in tt_only_data_from_db %}
+      <tr>
+        {% for value in row.values %}
+        <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    {% elif selected_option == 'other_only' %}
+      {% for row in other_only_data_from_db %}
+      <tr>
+        {% for value in row.values %}
+        <td>{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    {% endif %}
+  </tbody>
+</table>
+
+
+{% include "footer.html" %}
+
+<script>
+ 
+  // Obtenir la valeur sélectionnée du combo box
+  var comboBox = document.getElementById('combo-box');
+  comboBox.addEventListener('change', function() {
+    var selectedOption = comboBox.value;
+
+    // Mettre à jour la page en fonction de l'option sélectionnée
+    window.location.href = "?selected_option=" + selectedOption;
+  });
+
+  // Récupérer la valeur sélectionnée du combo box depuis l'URL
+  var urlParams = new URLSearchParams(window.location.search);
+  var selectedOption = urlParams.get('selected_option');
+  if (selectedOption) {
+    comboBox.value = selectedOption;
+  }
+  
+</script>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}
+<script src="/static/assets/vendor/clipboard/dist/clipboard.min.js"></script>
+{% endblock javascripts %}

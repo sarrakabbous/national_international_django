@@ -1,0 +1,75 @@
+{% extends 'master.html' %}
+
+{% block title %} Result {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+<style>
+    table {
+        border-collapse: separate;
+        border-spacing: 8px;
+    }
+    th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        padding: 8px;
+    }
+    td {
+        border-bottom: 1px solid rgba(32, 32, 146, 0.862);
+        padding: 8px;
+    }
+</style>
+
+<center>
+<br>
+<h1>Comparaison des données Telecom et Operateur</h1>
+<br>
+    <form method="post" action="{% url 'compare' %}">
+        {% csrf_token %}
+        <select name="data_select" class="custom-select" style="width: 600px;">
+            <option value="">-- Sélectionnez --</option>
+            <option value="telecom">Telecom</option>
+            <option value="operateur">Operateur</option>
+            <option value="both">Les deux</option>
+        </select>
+        <input type="submit" value="Comparer" class="btn btn-primary" >
+    </form>
+
+    {% if selected_data %}
+    <br>
+        <h2>Résultats de la comparaison :</h2>
+        <br>
+        <table>
+            <tr>
+                <th>InSwitch</th>
+                <th>CallingNumber</th>
+                <th>CalledNumber</th>
+                <th>CallDate</th>
+                <th>CallHour</th>
+                <th>CallMinute</th>
+                <th>CallSecond</th>
+                <th>CallDuration</th>
+            </tr>
+            {% for data in selected_data %}
+                <tr>
+                    <td>{{ data.InSwitch }}</td>
+                    <td>{{ data.CallingNumber }}</td>
+                    <td>{{ data.CalledNumber }}</td>
+                    <td>{{ data.CallDate }}</td>
+                    <td>{{ data.CallHour }}</td>
+                    <td>{{ data.CallMinute }}</td>
+                    <td>{{ data.CallSecond }}</td>
+                    <td>{{ data.CallDuration }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</center>
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}
+{% endblock javascripts %}
+
