@@ -13,7 +13,6 @@ class UploadFileForm(forms.Form):
 
 
 class Telecom(models.Model):
-    InSwitch = models.CharField(max_length=50)
     CallingNumber = models.CharField(max_length=50)
     CalledNumber = models.CharField(max_length=50)
     CallDate = models.CharField(max_length=150)
@@ -23,7 +22,6 @@ class Telecom(models.Model):
     CallDuration = models.IntegerField()
 
 class Operateur(models.Model):
-    InSwitch = models.CharField(max_length=50)
     CallingNumber = models.CharField(max_length=50)
     CalledNumber = models.CharField(max_length=50)
     CallDate = models.CharField(max_length=150)

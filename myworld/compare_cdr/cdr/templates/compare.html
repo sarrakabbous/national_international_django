@@ -22,20 +22,26 @@
     }
 </style>
 
+
 <center>
 <br>
 <h1>Comparaison des données Telecom et Operateur</h1>
 <br>
-    <form method="post" action="{% url 'compare' %}">
-        {% csrf_token %}
+    <form method="post" action="{% url 'compare' %}" id="compare-form">
+    {% csrf_token %}
         <select name="data_select" class="custom-select" style="width: 600px;">
             <option value="">-- Sélectionnez --</option>
-            <option value="telecom">Telecom</option>
+            <option value="telecom">Tunisie Telecom</option>
             <option value="operateur">Operateur</option>
-            <option value="both">Les deux</option>
+            <option value="both">TT et Operateur</option>
         </select>
         <input type="submit" value="Comparer" class="btn btn-primary" >
+        <button type="submit" name="export_submit" class="btn btn-success" id="export-button">Export to Excel</button>
     </form>
+        
+    </form>
+
+    
 
     {% if selected_data %}
     <br>
@@ -43,7 +49,6 @@
         <br>
         <table>
             <tr>
-                <th>InSwitch</th>
                 <th>CallingNumber</th>
                 <th>CalledNumber</th>
                 <th>CallDate</th>
@@ -54,7 +59,6 @@
             </tr>
             {% for data in selected_data %}
                 <tr>
-                    <td>{{ data.InSwitch }}</td>
                     <td>{{ data.CallingNumber }}</td>
                     <td>{{ data.CalledNumber }}</td>
                     <td>{{ data.CallDate }}</td>
@@ -67,9 +71,62 @@
         </table>
     {% endif %}
 </center>
+
+
 {% endblock content %}
 
 <!-- Specific JS goes HERE --> 
 {% block javascripts %}
+<script>
+    function exportToExcel() {
+        var table = document.querySelector('table');
+        var data = [];
+        
+        // Get table headers
+        var headers = [];
+        for (var i = 0; i < table.rows[0].cells.length; i++) {
+            headers.push(table.rows[0].cells[i].innerText);
+        }
+        
+        // Add headers as the first row in data array
+        data.push(headers);
+        
+        // Get table data rows
+        for (var i = 1; i < table.rows.length; i++) {
+            var rowData = [];
+            
+            for (var j = 0; j < table.rows[i].cells.length; j++) {
+                rowData.push(table.rows[i].cells[j].innerText);
+            }
+            
+            data.push(rowData);
+        }
+        
+        // Create a CSV string with comma as delimiter
+        var csvContent = "data:text/csv;charset=utf-8,"
+                         + data.map(row => row.join(",")).join("\n");
+        
+        // Create a temporary anchor element
+        var anchor = document.createElement('a');
+        anchor.href = encodeURI(csvContent);
+        
+        // Set the anchor element attributes for downloading the file
+        anchor.download = 'compare.csv';
+        anchor.style.display = 'none';
+        
+        // Append the anchor element to the document body
+        document.body.appendChild(anchor);
+        
+        // Trigger a click event on the anchor element
+        anchor.click();
+        
+        // Remove the anchor element from the document body
+        document.body.removeChild(anchor);
+    }
+    
+    document.getElementById('export-button').addEventListener('click', exportToExcel);
+</script>
 {% endblock javascripts %}
+
+
 

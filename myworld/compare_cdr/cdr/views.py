@@ -1,11 +1,22 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
 from django.template import loader
 import pandas as pd
 from .models import Operateur,Telecom
 from .forms import UploadFileForm
 import odf
 from odf import text
+from django import template
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+from .forms import LoginForm, SignUpForm
+import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import Workbook
+
+
 
 
 # Create your views here.
@@ -33,11 +44,15 @@ def extract_columns(request):
                 print(df2)
 
                 # Extraire les colonnes désirées pour Telecom
-                selected_columns1 = df1[['InSwitch', 'CallingNumber', 'CalledNumber', 'CallDate', 'CallHour', 'CallMinute', 'CallSecond', 'CallDuration']]
+                selected_columns1 = df1[['CallingNumber', 'CalledNumber', 'CallDate', 'CallHour', 'CallMinute', 'CallSecond', 'CallDuration']]
+                
+                # Add '216' at the beginning of CallingNumber for Telecom
+                selected_columns1['CallingNumber'] = '216' + selected_columns1['CallingNumber'].astype(str)
+                
+                
                 # Enregistrer les données dans la table Telecom
                 for _, row in selected_columns1.iterrows():
                     tt_data = Telecom(
-                        InSwitch=row['InSwitch'],
                         CallingNumber=row['CallingNumber'],
                         CalledNumber=row['CalledNumber'],
                         CallDate=row['CallDate'],
@@ -49,11 +64,10 @@ def extract_columns(request):
                     tt_data.save()
 
                 # Extraire les colonnes désirées pour Operateur
-                selected_columns2 = df2[['InSwitch', 'CallingNumber', 'CalledNumber', 'CallDate', 'CallHour', 'CallMinute', 'CallSecond', 'CallDuration']]
+                selected_columns2 = df2[['CallingNumber', 'CalledNumber', 'CallDate', 'CallHour', 'CallMinute', 'CallSecond', 'CallDuration']]
                 # Enregistrer les données dans la table Operateur
                 for _, row in selected_columns2.iterrows():
                     other_data = Operateur(
-                        InSwitch=row['InSwitch'],
                         CallingNumber=row['CallingNumber'],
                         CalledNumber=row['CalledNumber'],
                         CallDate=row['CallDate'],
@@ -112,6 +126,15 @@ def extract_columns(request):
                     'tt_only_data': tt_only_data,
                     'other_only_data': other_only_data,
                 }
+
+                # Store the extracted data in the session
+                request.session['selected_data'] = {
+                'identical_data': identical_data,
+                'tt_only_data': tt_only_data,
+                'other_only_data': other_only_data,
+            }
+
+
                 
 
                 # Récupérer l'option sélectionnée du combo box
@@ -142,8 +165,6 @@ def extract_columns(request):
     return render(request, 'form.html', {'form': form})
 
 
-
-
 def compare(request):
     selected_data = []
     if request.method == 'POST':
@@ -153,13 +174,93 @@ def compare(request):
         elif selected_option == 'operateur':
             selected_data = Operateur.objects.all()
         elif selected_option == 'both':
-            selected_data = list(Telecom.objects.all()) + list(Operateur.objects.all())
-
+            telecom_data = Telecom.objects.all().values()
+            operateur_data = Operateur.objects.all().values()
+            selected_data = telecom_data.intersection(operateur_data)
+        
     context = {
         'selected_data': selected_data
     }
 
     return render(request, 'compare.html', context)
 
+@login_required(login_url="/login/")
+def index(request):
+    context = {'segment': 'index'}
 
-  
+    html_template = loader.get_template('main.html')
+    return HttpResponse(html_template.render(context, request))
+
+
+@login_required(login_url="/login/")
+def pages(request):
+    context = {}
+    # All resource paths end in .html.
+    # Pick out the html file name from the url. And load that template.
+    try:
+
+        load_template = request.path.split('/')[-1]
+
+        if load_template == 'admin':
+            return HttpResponseRedirect(reverse('admin:index'))
+        context['segment'] = load_template
+
+        html_template = loader.get_template('' + load_template)
+        return HttpResponse(html_template.render(context, request))
+
+    except template.TemplateDoesNotExist:
+
+        html_template = loader.get_template('page-404.html')
+        return HttpResponse(html_template.render(context, request))
+
+    except:
+        html_template = loader.get_template('page-500.html')
+        return HttpResponse(html_template.render(context, request))
+    
+
+
+def login_view(request):
+    form = LoginForm(request.POST or None)
+
+    msg = None
+
+    if request.method == "POST":
+
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("/")
+            else:
+                msg = 'Invalid credentials'
+        else:
+            msg = 'Error validating the form'
+
+    return render(request, "login.html", {"form": form, "msg": msg})
+
+
+def register_user(request):
+    msg = None
+    success = False
+
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get("username")
+            raw_password = form.cleaned_data.get("password1")
+            user = authenticate(username=username, password=raw_password)
+
+            msg = 'User created - please <a href="/login">login</a>.'
+            success = True
+
+            #return redirect("/login/")
+
+        else:
+            msg = 'Form is not valid'
+    else:
+        form = SignUpForm()
+
+    return render(request, "register.html", {"form": form, "msg": msg, "success": success})
